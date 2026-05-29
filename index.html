@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -263,9 +263,9 @@
     const lastScan = localStorage.getItem('last_scan_time');
     const isKantor = rawQR.includes("KANTOR");
     
-    // Jeda: 1 jam (Kantor) vs 10 menit (Kelas/Lainnya)
+    // Jeda: 1 jam (Kantor) vs 10 menit (Dapur/Lainnya)
     const jedaMs = isKantor ? (5 * 60 * 1000) : (5 * 60 * 1000); 
-    const tipeJeda = isKantor ? "5 Menit (Absen Kantor)" : "5 Menit (Absen Kelas)";
+    const tipeJeda = isKantor ? "5 Menit (Absen Kantor)" : "5 Menit (Absen Dapur)";
 
     if (lastScan && (now.getTime() - lastScan < jedaMs)) {
         const diff = jedaMs - (now.getTime() - lastScan);
@@ -285,9 +285,9 @@
     const today = now.toLocaleDateString('id-ID');
     const name = (localStorage.getItem('user_full_name') || "KARYAWAN").toUpperCase();
     
-    let jenis = "MENGAJAR";
+    let jenis = "MEMASAK";
     if(isKantor) jenis = "KANTOR";
-    if(rawQR.includes("AULA SMP") || rawQR.includes("KAJIAN")) jenis = "KAJIAN";
+    if(rawQR.includes("Gudang") || rawQR.includes("KONTROL")) jenis = "KONTROL";
 
     const locName = rawQR.replace("LOC:", "").trim();
     const jamMenit = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}).replace('.', ':');
@@ -310,7 +310,7 @@
 
         playBeep();
         document.getElementById('modal-title').innerText = "ABSEN BERHASIL";
-        document.getElementById('res-status').innerText = jenis === "KANTOR" ? `KANTOR (${statusKtr})` : (jenis === "KAJIAN" ? "KAJIAN" : "LOG AKTIVITAS");
+        document.getElementById('res-status').innerText = jenis === "KANTOR" ? `KANTOR (${statusKtr})` : (jenis === "KONTROL" ? "KONTROL" : "LOG AKTIVITAS");
         document.getElementById('res-info').innerText = `${locName} @ ${jamMenit}`;
         document.getElementById('modal-success').classList.remove('hidden');
         if(btnClose) btnClose.disabled = false;
@@ -337,13 +337,13 @@
                 if(search && !item.nama.toLowerCase().includes(search)) return;
                 if(formattedDate && item.tanggal !== formattedDate) return;
                 const key = `${item.nama}_${item.tanggal}`;
-                if(!groups[key]) groups[key] = { nama: item.nama, tgl: item.tanggal, in: "-", out: "-", kajian: "-", logs: [], ts: item.timestamp };
+                if(!groups[key]) groups[key] = { nama: item.nama, tgl: item.tanggal, in: "-", out: "-", KONTROL: "-", logs: [], ts: item.timestamp };
                 
                 if(item.jenis === "KANTOR") {
                     if(item.statusKantor === "MASUK") groups[key].in = item.waktu;
                     if(item.statusKantor === "PULANG") groups[key].out = item.waktu;
-                } else if(item.jenis === "KAJIAN") {
-                    groups[key].kajian = item.waktu;
+                } else if(item.jenis === "KONTROL") {
+                    groups[key].KONTROL = item.waktu;
                 } else { 
                     groups[key].logs.push(`${item.lokasi} (${item.waktu})`); 
                 }
@@ -362,7 +362,7 @@
                         <td class="p-5 text-slate-400 font-bold">${i.tgl}</td>
                         <td class="p-5 text-center text-emerald-400 font-black">${i.in}</td>
                         <td class="p-5 text-center text-orange-400 font-black">${i.out}</td>
-                        <td class="p-5 text-center text-cyan-400 font-black">${i.kajian}</td>
+                        <td class="p-5 text-center text-cyan-400 font-black">${i.KONTROL}</td>
                         <td class="p-5">${i.logs.map(l => `<span class="class-badge">${l}</span>`).join("") || "-"}</td>
                     </tr>
                 `);
@@ -393,13 +393,13 @@
                 }
 
                 const key = `${item.nama}_${item.tanggal}`;
-                if(!groups[key]) groups[key] = { nama: item.nama, tgl: item.tanggal, in: "-", out: "-", kajian: "-", logs: [], ts: item.timestamp };
+                if(!groups[key]) groups[key] = { nama: item.nama, tgl: item.tanggal, in: "-", out: "-", KONTROL: "-", logs: [], ts: item.timestamp };
                 
                 if(item.jenis === "KANTOR") {
                     if(item.statusKantor === "MASUK") groups[key].in = item.waktu;
                     if(item.statusKantor === "PULANG") groups[key].out = item.waktu;
-                } else if(item.jenis === "KAJIAN") {
-                    groups[key].kajian = item.waktu;
+                } else if(item.jenis === "KONTROL") {
+                    groups[key].KONTROL = item.waktu;
                 } else { 
                     groups[key].logs.push(`${item.lokasi} (${item.waktu})`); 
                 }
@@ -414,7 +414,7 @@
             let maxLogs = 0;
             rawData.forEach(i => { if(i.logs.length > maxLogs) maxLogs = i.logs.length; });
             const detailExcel = rawData.map(i => {
-                const row = { "Nama Karyawan": i.nama, "Tanggal": i.tgl, "Kantor Masuk": i.in, "Kantor Pulang": i.out, "Aula SMP (Kajian)": i.kajian };
+                const row = { "Nama Karyawan": i.nama, "Tanggal": i.tgl, "Kantor Masuk": i.in, "Kantor Pulang": i.out, "Gudang (KONTROL)": i.KONTROL };
                 for(let j = 0; j < maxLogs; j++) row[`Jam-${j+1} / Aktivitas`] = i.logs[j] || "-";
                 return row;
             });
@@ -425,10 +425,10 @@
             if(mode === 'bulanan') {
                 const summaryObj = {};
                 rawData.forEach(i => {
-                    if(!summaryObj[i.nama]) summaryObj[i.nama] = { Nama: i.nama, Total_Hadir: 0, Total_Kajian: 0, Total_Jam_Mengajar: 0 };
+                    if(!summaryObj[i.nama]) summaryObj[i.nama] = { Nama: i.nama, Total_Hadir: 0, Total_KONTROL: 0, Total_Jam_MEMASAK: 0 };
                     if(i.in !== "-" || i.out !== "-") summaryObj[i.nama].Total_Hadir++;
-                    if(i.kajian !== "-") summaryObj[i.nama].Total_Kajian++;
-                    summaryObj[i.nama].Total_Jam_Mengajar += i.logs.length;
+                    if(i.KONTROL !== "-") summaryObj[i.nama].Total_KONTROL++;
+                    summaryObj[i.nama].Total_Jam_MEMASAK += i.logs.length;
                 });
                 const summaryExcel = Object.values(summaryObj);
                 const wsSummary = XLSX.utils.json_to_sheet(summaryExcel);
