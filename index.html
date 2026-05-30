@@ -131,7 +131,7 @@
                                     <th class="p-5 text-center">Kantor Out</th>
                                     <th class="p-5 text-center">Dapur</th>
                                     <th class="p-5 text-center">Gudang</th>
-                                    <th class="p-5">Aktivitas</th>
+                                    
                                 </tr>
                             </thead>
                             <tbody id="table-body" class="divide-y divide-white/5 text-[10px]"></tbody>
@@ -436,7 +436,7 @@
                 XLSX.utils.book_append_sheet(wb, wsSummary, "Rekap Total Karyawan");
             }
 
-            XLSX.writeFile(wb, `Rekap_Absensi_DA_${mode}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            XLSX.writeFile(wb, `Rekap_Absensi_Karyawan_${mode}_${new Date().toISOString().split('T')[0]}.xlsx`);
         };
 
         window.promptAdmin = () => {
